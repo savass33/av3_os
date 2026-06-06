@@ -197,29 +197,78 @@ public class VpeGUI extends JFrame {
         });
 
         btnDelete.addActionListener(e -> {
-            String name = getSelectedName();
-            if (name != null) {
-                int confirm = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja excluir '" + name + "'?", "Confirmar Exclusão", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    FileSystemNode node = fs.getCurrentDirectory().getChild(name);
-                    if (node.isDirectory()) fs.deleteDirectory(name);
-                    else fs.deleteFile(name);
-                    refreshAll();
+            
+            FileSystemNode node = getSelectedNode();
+
+            if (node == null)
+                return;
+
+            if (node == fs.getRoot()) {
+                showError("Não é possível excluir o diretório raiz.");
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Tem certeza que deseja excluir '" + node.getName() + "'?",
+                    "Confirmar Exclusão",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+
+                if (node.isDirectory()) {
+
+                    fs.setCurrentDirectory(node.getParent());
+
+                    fs.deleteDirectory(node.getName());
+
+                } else {
+
+                    fs.deleteFile(node.getName());
                 }
+
+                refreshAll();
             }
         });
 
         btnRename.addActionListener(e -> {
-            String oldName = getSelectedName();
-            if (oldName != null) {
-                String newName = JOptionPane.showInputDialog(this, "Novo nome para '" + oldName + "':", oldName);
-                if (newName != null && !newName.trim().isEmpty() && !newName.equals(oldName)) {
-                    FileSystemNode node = fs.getCurrentDirectory().getChild(oldName);
-                    if (node.isDirectory()) fs.renameDirectory(oldName, newName.trim());
-                    else fs.renameFile(oldName, newName.trim());
-                    refreshAll();
-                }
+
+            FileSystemNode node = getSelectedNode();
+
+            if (node == null)
+                return;
+
+            if (node == fs.getRoot()) {
+                showError("Não é possível renomear o diretório raiz.");
+                return;
             }
+
+            String newName = JOptionPane.showInputDialog(
+                    this,
+                    "Novo nome:",
+                    node.getName());
+
+            if (newName == null || newName.trim().isEmpty())
+                return;
+
+            if (node.isDirectory()) {
+
+                Directory parent = node.getParent();
+
+                fs.setCurrentDirectory(parent);
+
+                fs.renameDirectory(
+                        node.getName(),
+                        newName.trim());
+
+            } else {
+
+                fs.renameFile(
+                        node.getName(),
+                        newName.trim());
+            }
+
+            refreshAll();
         });
 
         btnCopy.addActionListener(e -> {
@@ -266,6 +315,42 @@ public class VpeGUI extends JFrame {
                 refreshAll();
             }
         }
+    }
+
+    private FileSystemNode getSelectedNode() {
+
+        // Primeiro tenta a tabela
+        int row = tableFiles.getSelectedRow();
+
+        if (row >= 0) {
+            String name = (String) tableModel.getValueAt(row, 0);
+            return fs.getCurrentDirectory().getChild(name);
+        }
+
+        // Se não houver item na tabela, tenta a árvore
+        DefaultMutableTreeNode treeNode =
+                (DefaultMutableTreeNode) treeNavigation.getLastSelectedPathComponent();
+
+        if (treeNode != null) {
+
+            Object[] path = treeNode.getUserObjectPath();
+
+            Directory dir = fs.getRoot();
+
+            for (int i = 1; i < path.length; i++) {
+
+                FileSystemNode child = dir.getChild(path[i].toString());
+
+                if (child != null && child.isDirectory()) {
+                    dir = (Directory) child;
+                }
+            }
+
+            return dir;
+        }
+
+        showError("Selecione um item.");
+        return null;
     }
 
     private String getSelectedName() {

@@ -208,4 +208,4 @@ A execução prático-acadêmica do Simulador consolidou conhecimentos massivos 
 ## 14. Repositório GitHub
 
 📍 **Link oficial do projeto no GitHub:**  
-👉 [INSERIR_LINK_DO_GITHUB_AQUI] 👈
+👉 [[https://github.com/savass33/av3_os](https://github.com/savass33/av3_os)] 👈
